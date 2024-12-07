@@ -27,15 +27,30 @@ class TargetCloudPubSub(Target):
             description="The name of the PubSub topic to write to",
         ),
         th.Property(
-            "file_naming_scheme",
+            "client_id",
             th.StringType,
-            description="The scheme with which output files will be named",
+            description="Client identifier (usually email)",
         ),
         th.Property(
-            "auth_token",
+            "source",
             th.StringType,
-            secret=True,  # Flag config as protected.
-            description="The path to the target output file",
+            description="Source system identifier",
+        ),
+        th.Property(
+            "schema_version",
+            th.StringType,
+            default="2.0.0",
+            description="Schema version",
+        ),
+        th.Property(
+            "job_id",
+            th.StringType,
+            description="Unique job identifier",
+        ),
+        th.Property(
+            "batch_id_prefix",
+            th.StringType,
+            description="Prefix for batch ID",
         ),
     ).to_dict()
 
