@@ -6,9 +6,18 @@ from google.cloud import pubsub_v1
 from singer_sdk.sinks import BatchSink
 from singer_sdk.target_base import Target
 import uuid
+from decimal import Decimal
 
 class DateTimeEncoder(json.JSONEncoder):
     def default(self, obj):
+        if isinstance(obj, datetime):
+            return obj.isoformat()
+        return super().default(obj)
+
+class DecimalEncoder(json.JSONEncoder):
+    def default(self, obj):
+        if isinstance(obj, Decimal):
+            return str(obj)
         if isinstance(obj, datetime):
             return obj.isoformat()
         return super().default(obj)
@@ -30,6 +39,14 @@ class CloudPubSubSink(BatchSink):
             self.config["project_id"], self.config["topic"]
         )
 
+    def _validate_and_parse(self, record):
+        """Skip validation and just return the record."""
+        # Convert company field if it's an object
+        if 'company' in record and isinstance(record['company'], dict):
+            record['company'] = str(record['company'])
+        
+        return record
+
     def process_batch(self, context: dict) -> None:
         batch_timestamp = datetime.utcnow().strftime("%Y%m%d_%H%M%S")
         batch_id = f"{self.config.get('batch_id_prefix', '')}_{batch_timestamp}_{str(uuid.uuid4())[:8]}"
@@ -49,7 +66,10 @@ class CloudPubSubSink(BatchSink):
                 }
             }
             
-            message_data = json.dumps(enriched_message, cls=DateTimeEncoder).encode("utf-8")
+            message_data = json.dumps(
+                enriched_message, 
+                cls=DecimalEncoder
+            ).encode("utf-8")
             fut = self.publisher.publish(self.topic_path, message_data)
             res.append(fut)
 
